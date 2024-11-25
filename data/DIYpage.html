@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+	<style>
+		body{background: #5c4c4c;color:#fff;text-align:center}  div{margin:10px}
+	</style>
+<body>
+			<div>
+				<h1>
+					Creating😁 and Setting🛠️
+				</h1>
+			</div>
+    		<div id='login'>
+			<div style='text-align: center'>
+				<input id="btnclean" class="button button-highlight button-pill button-small" type="button" onclick='cleanFunction()' value="clean">
+				<input id="btnrandom" class="button button-highlight button-pill button-small" type="button" onclick='randomFunction()' value="random">
+				<input id="btnsave" class="button button-highlight button-pill button-small" type="button" onclick='saveFunction()' value="save">
+			</div>
+			<div style='text-align: center'>
+				<canvas id='drawCanvas' width='400' height='400'>
+				</canvas>
+			</div>
+			<div style='text-align: center'>
+				<canvas id='selectedColor' width='150' height='20'>
+				</canvas>
+			</div>
+			<div style='text-align: center'>
+				<canvas id='palette' width='200' height='200'>
+				</canvas>
+			</div>
+		</div>
+
+
+    <div class="all">
+        <p>当前亮度⚡0%</p>
+        <div class="bar">
+            <div class="box"></div>
+        </div>
+    </div>
+
+	<button id = "RollBtn">
+		点我 旋转屏幕方向🤖
+	</button>
+
+	<div>
+		<h3 id="WiFiSSID">
+			WiFi名称:
+		</h3>
+		<button id = "WiFiSSIDBtn">
+		点我 清除配网信息🤖
+	</button>
+	</div>
+
+</body>
+</html>
+
+
+<style type="text/css">
+     button {
+        width: 250px;
+        padding:8px;
+        background-color: #428bca;
+        border-color: #357ebd;
+        color: #fff;
+        -moz-border-radius: 10px;
+        -webkit-border-radius: 10px;
+        border-radius: 10px; /* future proofing */
+        -khtml-border-radius: 10px; /* for old Konqueror browsers */
+        text-align: center;
+        vertical-align: middle;
+        border: 1px solid transparent;
+        font-weight: 900;
+        font-size:125%
+      }
+</style>
+
+<!--Create Emoji Page-->
+<script type='text/javascript'>
+	let canvas = document.getElementById('drawCanvas');
+	let Pcanvas = document.getElementById('palette');
+	var select_color = '#000000';
+	const showColor = document.getElementById('selectedColor');
+	const Sctx = showColor.getContext('2d');
+	function chooseColor(canvas, obj) {
+		this.canvas = canvas;
+		this.cvs = canvas.getContext('2d');
+		this.color00 = '#000000';
+		this.color01 = '#1D2B53';
+		this.color02 = '#7E2553';
+		this.color03 = '#008351';
+		this.color10 = '#A85135';
+		this.color11 = '#5F574F';
+		this.color12 = '#C2C3C7';
+		this.color13 = '#FFF1E8';
+		this.color20 = '#FF004D';
+		this.color21 = '#FFAC00';
+		this.color22 = '#FFFF27';
+		this.color23 = '#00E756';
+		this.color30 = '#29ADFF';
+		this.color31 = '#83769C';
+		this.color32 = '#FF77A8';
+		this.color33 = '#FFCCAA';
+		this.colorlist = [this.color00, this.color01, this.color02, this.color03, this.color10, this.color11, this.color12, this.color13, this.color20, this.color21, this.color22, this.color23, this.color30, this.color31, this.color32, this.color33];
+		this.boxSize = 50;
+		this.bgWidthLength = 0;
+		this.bgHeightLength = 0;
+		this.clickedArr = [];
+		this.start();
+		this.click();
+		return this
+	}
+	chooseColor.prototype.start = function() {
+		this.bgWidthLength = parseInt(this.canvas.width / this.boxSize);
+		this.bgHeightLength = parseInt(this.canvas.height / this.boxSize);
+		this.drawBg();
+	}
+	chooseColor.prototype.drawBg = function() {
+		var conut = 0;
+		for (let i = 0; i < this.bgHeightLength; i++) {
+			for (let j = 0; j < this.bgWidthLength; j++) {
+				this.drawBgBox(j * this.boxSize, i * this.boxSize, conut);
+				conut++;
+			}
+		}
+	}
+	chooseColor.prototype.drawBgBox = function(x, y, z) {
+		this.cvs.beginPath();
+		this.cvs.fillStyle = this.colorlist[z];
+		this.cvs.fillRect(x + 1, y + 1, this.boxSize - 1, this.boxSize - 1);
+		this.cvs.fill();
+		this.cvs.stroke();
+		this.cvs.closePath();
+	}
+	chooseColor.prototype.mousemove = function(e) {
+		let o = this.computedXY(e.offsetX, e.offsetY);
+	}
+	chooseColor.prototype.computedXY = function(x, y) {
+		for (let i = 0; i < this.bgWidthLength; i++) {
+			if (x > i * this.boxSize && x < (i + 1) * this.boxSize) {
+				x = i;
+				break;
+			}
+		}
+		for (let i = 0; i < this.bgHeightLength; i++) {
+			if (y > i * this.boxSize && y < (i + 1) * this.boxSize) {
+				y = i;
+				break;
+			}
+		}
+		return {
+			x,
+			y
+		}
+	}
+	chooseColor.prototype.click = function() {
+		let move = this.mousemove.bind(this);
+		this.canvas.addEventListener('mousedown',
+		function(e) {
+			let o = this.computedXY(e.offsetX, e.offsetY);
+			select_color = this.colorlist[o.y * 4 + o.x];
+			Sctx.fillStyle = select_color;
+			Sctx.fillRect(0, 0, 300, 300);
+			this.canvas.addEventListener('mousemove', move)
+		}.bind(this));
+		this.canvas.addEventListener('mouseup', function(e) {
+			this.canvas.removeEventListener('mousemove', move)
+		}.bind(this));
+	}
+	function run(canvas, obj) {
+		obj = obj || {};
+		this.canvas = canvas;
+		this.cvs = canvas.getContext('2d');
+		this.bgColor = obj.bgColor || '#000000';
+		this.clickedColor = obj.clickedColor || '#000000';
+		this.boxSize = obj.boxSize || 50;
+		this.bgWidthLength = 0;
+		this.bgHeightLength = 0;
+		this.clickedArr = [];
+		this.start();
+		this.click();
+		return this
+	}
+	run.prototype.start = function() {
+		this.bgWidthLength = parseInt(this.canvas.width / this.boxSize);
+		this.bgHeightLength = parseInt(this.canvas.height / this.boxSize);
+		this.drawBg()
+	}
+	run.prototype.click = function() {
+		let move = this.mousemove.bind(this);
+		this.canvas.addEventListener('mousedown',
+		function(e) {
+			let o = this.computedXY(e.offsetX, e.offsetY);
+			this.toggleClick(o);
+			this.canvas.addEventListener('mousemove', move)
+		}.bind(this));
+		this.canvas.addEventListener('mouseup',
+		function(e) {
+			this.canvas.removeEventListener('mousemove', move)
+		}.bind(this))
+	}
+	run.prototype.mousemove = function(e) {
+		let o = this.computedXY(e.offsetX, e.offsetY);
+		this.toggleClick(o, true)
+	}
+	run.prototype.computedXY = function(x, y) {
+		for (let i = 0; i < this.bgWidthLength; i++) {
+			if (x > i * this.boxSize && x < (i + 1) * this.boxSize) {
+				x = i;
+				break
+			}
+		}
+		for (let i = 0; i < this.bgHeightLength; i++) {
+			if (y > i * this.boxSize && y < (i + 1) * this.boxSize) {
+				y = i;
+				break
+			}
+		}
+		return {
+			x,
+			y
+		}
+	}
+	run.prototype.toggleClick = function(o, draw) {
+		let has = {};
+		has.is = true;
+		this.clickedArr.forEach(function(item, index) {
+			if (item.x === o.x && item.y === o.y) {
+				has.is = false;
+				has.index = index
+			}
+		});
+		if (has.is) {
+			this.clickedArr.push(o);
+			this.drawBgBox(o.x * this.boxSize, o.y * this.boxSize, true)
+		}
+		if (!has.is && !draw) {
+			this.clickedArr.splice(has.index, 1);
+			this.drawBgBox(o.x * this.boxSize, o.y * this.boxSize)
+		}
+	}
+	run.prototype.Random = function(length) {
+		for (let i = 0; i < length; i++) {
+			let o = {};
+			o.x = parseInt(Math.random() * this.bgWidthLength);
+			o.y = parseInt(Math.random() * this.bgHeightLength);
+			this.toggleClick(o)
+		}
+	}
+	run.prototype.clean = function() {
+		this.clickedArr.forEach(function(o, index) {
+			this.drawBgBox(o.x * this.boxSize, o.y * this.boxSize)
+		}.bind(this));
+		this.clickedArr = []
+	}
+	run.prototype.drawBg = function() {
+		for (let i = 0; i < this.bgHeightLength; i++) {
+			for (let j = 0; j < this.bgWidthLength; j++) {
+				this.drawBgBox(j * this.boxSize, i * this.boxSize)
+			}
+		}
+	}
+	run.prototype.drawBgBox = function(x, y, z) {
+		this.cvs.beginPath();
+		this.cvs.fillStyle = z ? select_color: this.bgColor;
+		this.cvs.fillRect(x + 1, y + 1, this.boxSize - 1, this.boxSize - 1);
+		this.cvs.fill();
+		this.cvs.stroke();
+		this.cvs.closePath()
+	}
+
+	let a = new run(canvas);
+	let b = new chooseColor(Pcanvas);
+	function cleanFunction(){
+		a.clean();
+	}
+	function randomFunction(){
+		a.Random(100);
+	}
+
+	function saveFunction(){
+		saveImgData(a, b);
+	}
+
+	function downFunction(){
+		download(canvas.toDataURL(), 'test.png', 'image/png');
+	}
+
+	window.onload = function() {
+		a.drawBg();
+	};
+
+	function saveImgData(a, b) {
+		let imageData = '';
+		for (let row = 0; row < 8; row++) {
+			for (let col = 0; col < 8; col++) {
+				let canvansData = a.cvs.getImageData(a.boxSize * col + a.boxSize - 1, a.boxSize * row + a.boxSize - 1, 1, 1);
+				let HexData = '#';
+				for (let i = 0; i < 3; i++) {
+					var hex = parseInt(canvansData.data[i], 10).toString(16);
+					if (hex.length === 1) {
+						hex = '0' + hex
+					}
+					HexData += hex
+				}
+				HexData = HexData.toUpperCase();
+				console.log(HexData);
+				var index = b.colorlist.indexOf(HexData);
+				imageData += index.toString(16)
+			}
+		}
+		console.log(imageData);
+		sendSavedImagemess(imageData)
+	}
+
+	function sendSavedImagemess(imgmess) {
+		alert("保存成功😉返回主页面刷新即可 Hope u enjoy it😘😘")
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+
+			}
+		};
+		xhttp.open('GET', 'saveImage?IMGmess=' + imgmess, true);
+		xhttp.send()
+	}
+</script>
+
+
+
+<style>
+    .all {
+    width: 500px;
+    height: 80px;
+    margin: 100px auto;
+    position: relative;
+    }
+
+    .bar {
+    width: 500px;
+    height: 20px;
+    border-radius: 10px;
+    background: #aaa;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin: auto;
+    cursor: pointer;
+    }
+
+    .box {
+    width: 30px;
+    height: 30px;
+    background: #000;
+    position: absolute;
+    bottom: 0;
+    top: 0;
+    margin: auto 0;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: left 0.1s linear 0s;
+    }
+</style>
+
+
+<script>
+	let bili = 0;
+    var box = document.getElementsByClassName('box')[0]
+    var bar = document.getElementsByClassName('bar')[0]
+    var all = document.getElementsByClassName('all')[0]
+    var p = document.getElementsByTagName('p')[0]
+    var cha = bar.offsetWidth - box.offsetWidth
+    box.onmousedown = function (ev) {
+		let boxL = box.offsetLeft
+		let e = ev || window.event //兼容性
+		let mouseX = e.clientX //鼠标按下的位置
+		window.onmousemove = function (ev) {
+			let e = ev || window.event
+			let moveL = e.clientX - mouseX //鼠标移动的距离
+			let newL = boxL + moveL //left值
+			// 判断最大值和最小值
+			if (newL < 0) {
+				newL = 0
+			}
+			if (newL >= cha) {
+				newL = cha
+			}
+			// 改变left值
+			box.style.left = newL + 'px'
+			// 计算比例
+			bili = newL / cha * 100
+			p.innerHTML = '当前亮度⚡' + Math.ceil(bili) + '%'
+			return false //取消默认事件
+		}
+		window.onmouseup = function () {
+			window.onmousemove = false //解绑移动事件
+			sendBrightnewwmess(Math.round(bili / 7));
+			return false
+		}
+		return false
+    };
+    // 点击音量条
+    bar.onclick = function (ev) {
+		let left = ev.clientX - all.offsetLeft - box.offsetWidth / 2
+		if (left < 0) {
+			left = 0
+		}
+		if (left >= cha) {
+			left = cha
+		}
+		box.style.left = left + 'px'
+		bili = left / cha * 100
+		p.innerHTML = '当前亮度⚡' + Math.ceil(bili) + '%'
+		console.log(left)
+		sendBrightnewwmess(Math.round(bili / 7));
+		return false
+    }
+
+	function sendBrightnewwmess(mess) {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+
+			}
+		};
+		xhttp.open('GET', 'setBrightness?Brightmess=' + mess, true);
+		xhttp.send()
+	}
+</script>
+
+<script>
+	let RollBtn = document.getElementById("RollBtn")
+	RollBtn.onmousedown = function (){
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+			}
+		};
+		xhttp.open('GET', 'RotateBtn', true);
+		xhttp.send()
+	}
+</script>
+
+<script>
+	let WiFiSSID = document.getElementById("WiFiSSID")
+
+	RollBtn.onclick = function (){
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				WiFiSSID.innerText = "WiFi名称: "
+			}
+		};
+		xhttp.open('GET', 'GetWiFimess', true);
+		xhttp.send()
+	}
+</script>
+
+<script>
+	window.onload = function (){
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState == 4 && this.status == 200) {
+				WiFiSSID.innerText = "WiFi名称: " + this.responseText
+			}
+		};
+		xhttp.open('GET', 'GetWiFimess', true);
+		xhttp.send()
+	}
+</script>
+
+<script>
+	let WiFiSSIDBtn = document.getElementById("WiFiSSIDBtn")
+	WiFiSSIDBtn.onclick = function (){
+		var r = confirm("清除配网信息 并重启开发板 下次开机时需要手动配网🙃");
+		if (r === true) {
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState == 4 && this.status == 200) {
+
+				}
+			};
+			xhttp.open('GET', 'DeleteWiFi', true);
+			xhttp.send()
+		}
+	}
+</script>

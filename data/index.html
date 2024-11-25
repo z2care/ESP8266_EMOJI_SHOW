@@ -1,0 +1,337 @@
+<!DOCTYPE HTML>
+<html>
+	<style>
+		body{background:#000;color:#fff;text-align:center}div{margin:10px}
+	</style>
+	<head>
+		<meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+<!--		<link rel="stylesheet"  href="Button.css">-->
+	</head>
+
+	<body>
+<!--	HEAD TITLE -->
+		<div>
+			<h3 id="PickAnEmoji">
+				Pick An Emoji
+			</h3>
+		</div>
+
+<!--	MAIN CANVAS -->
+		<div style='text-align: center'>
+			<canvas id='mainCanvas' width='160' height='160'>
+			</canvas>
+		</div>
+
+<!--	DIY TITLE -->
+		<div>
+			<h3 id="YourDIYEmojis">
+				Your DIY Emojis
+			</h3>
+		</div>
+
+<!--	DIY CANVAS -->
+		<div style='text-align: center'>
+			<canvas id='diyCanvas' width='160' height='80'>
+			</canvas>
+		</div>
+
+<!--	LIKE TITLE -->
+		<div>
+			<h3 id="YourLIKEDEmojis">
+				Your LIKED Emojis
+			</h3>
+		</div>
+
+<!--	LIKE CANVAS -->
+		<div style='text-align: center'>
+			<canvas id='likedCanvas' width='160' height='80'>
+			</canvas>
+		</div>
+		<input type='button' class="button button-highlight button-pill button-small" value='Like🥰' onclick='OnLikeClicked()' />
+		<input type='button' class="button button-highlight button-pill button-small" value='Delete💔' onclick='OnDeleteCliked()' />
+		<input type='button' class="button button-highlight button-pill button-small" value='Creating&Setting🛠️' onclick='createPage()' />
+	</body>
+
+</html>
+<!--global variable declare-->
+<script type="text/javascript">
+	let DIYIndexdata = 0;
+	let EMOJISLIST;
+	let DIYEMOJISLIST;
+	let LIKEDEMOJISLIST;
+	let COLORLIST;
+	let maincanvas = document.getElementById('mainCanvas');
+	let diycanvas = document.getElementById('diyCanvas');
+	let likedcanvas = document.getElementById('likedCanvas');
+	let canvas = document.getElementById('drawCanvas');
+	let LikeBtn = 0;
+	let DeleteBtn = 0;
+	let PickAnEmoji = document.getElementById("PickAnEmoji");
+	let YourDIYEmojis = document.getElementById("YourDIYEmojis");
+	let YourLIKEDEmojis = document.getElementById("YourLIKEDEmojis");
+</script>
+
+<script type='text/javascript'>
+	function OnLikeClicked(){
+		if (LikeBtn === 0){
+			LikeBtn = 1
+			DeleteBtn = 0
+			PickAnEmoji.innerText = "Clicked to add";
+			YourDIYEmojis.innerText = "Clicked to add";
+			document.body.style.backgroundColor ="#272727";
+		}else if (LikeBtn === 1){
+			LikeBtn = 0
+			DeleteBtn = 0
+			PickAnEmoji.innerText = "Pick An Emoji"
+			YourDIYEmojis.innerText = "Your DIY Emojis"
+			document.body.style.backgroundColor = "#000000";
+		}
+		console.log("LikeBtn:", LikeBtn, "DeleteBtn:", DeleteBtn)
+	}
+
+	function OnDeleteCliked(){
+		if (DeleteBtn === 0){
+			LikeBtn = 0
+			DeleteBtn = 1;
+			YourDIYEmojis.innerText = "Clicked to delete";
+			YourLIKEDEmojis.innerText = "Clicked to delete";
+			document.body.style.backgroundColor = "#2F0000";
+		}else if (DeleteBtn === 1){
+			LikeBtn = 0
+			DeleteBtn = 0;
+			YourDIYEmojis.innerText = "Your DIYE mojis";
+			YourLIKEDEmojis.innerText = "Your LIKEDE mojis";
+			document.body.style.backgroundColor = "#000000";
+		}
+		console.log("LikeBtn:", LikeBtn, "DeleteBtn:", DeleteBtn)
+	}
+</script>
+
+<!--打开DIY画板页面-->
+<script type='text/javascript'>
+	function createPage() {
+		url = window.location.href;
+		window.open(url + 'DIYpage.html')
+	}
+</script>
+
+<!--画图函数 drawPic 绘制三个图-->
+<script type="text/javascript">
+	function getTimeNow(){
+		var now=new Date();
+		return now.getTime();
+	}
+	getData();
+	function getData() {
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState === 4 && this.status === 200) {
+				var data = this.responseText;
+				var ResponseJson = JSON.parse(data);
+				EMOJISLIST = ResponseJson.AllEmojis;
+				DIYEMOJISLIST = ResponseJson.diyEmojis;
+				COLORLIST = ResponseJson.colorList;
+				LIKEDEMOJISLIST = ResponseJson.likedEmojis;
+				let aCanvas = new drawPic(maincanvas, ResponseJson.colorList, ResponseJson.AllEmojis, 0)
+				let bCanvas = new drawPic(diycanvas, ResponseJson.colorList, ResponseJson.diyEmojis, 1)
+				let cCanvas = new drawPic(likedcanvas, ResponseJson.colorList, ResponseJson.likedEmojis, 1)
+				aCanvas.start();
+				bCanvas.start();
+				cCanvas.start();
+			}
+		};
+		xhttp.open('GET', 'EmojiData.json', true);
+		xhttp.send()
+	}
+	function drawPic(canvas, colorList, emojisList, type) {
+		this.canvas = canvas;
+		this.emojisList = emojisList;
+		this.colorlist = colorList;
+		this.cvs = canvas.getContext('2d');
+		this.boxNum = 10;
+		this.bgWidthLength = 0;
+		this.bgHeightLength = 0;
+		this.clickedArr = [];
+		this.type = type;
+		this.start();
+		return this
+	}
+	drawPic.prototype.start = function() {
+		this.bgWidthLength = parseInt(this.canvas.width / this.boxSize);
+		this.bgHeightLength = parseInt(this.canvas.height / this.boxSize);
+		this.cvs.clearRect(0,0,this.canvas.width,this.canvas.height);
+		this.drawEmojis()
+	};
+	drawPic.prototype.drawEmojis = function() {
+		for (let i = 0; i < this.emojisList.length; i++) {
+			var imgData = this.cvs.createImageData(8, 8);
+			for (let j = 0; j < 64; j++) {
+				var colorIndex = this.strToint(this.emojisList[i][j]);
+				RGB = this.colorlist[colorIndex];
+				imgData.data[4 * j] = eval(RGB.slice(0, 3));
+				imgData.data[4 * j + 1] = eval(RGB.slice(3, 6));
+				imgData.data[4 * j + 2] = eval(RGB.slice(6));
+				imgData.data[4 * j + 3] = 255
+			}
+			var cooX = parseInt(i / this.boxNum);
+			var cooY = i % this.boxNum;
+			if (this.type === 0){
+				this.cvs.putImageData(imgData, cooX * 16, cooY * 16);
+			}else if(this.type === 1){
+				this.cvs.putImageData(imgData, cooY * 16, cooX * 16);
+			}
+		}
+	};
+	drawPic.prototype.drawBgBox = function(x, y, z) {
+		this.cvs.beginPath();
+		this.cvs.fillStyle = this.colorlist[z];
+		this.cvs.fillRect(x + 1, y + 1, this.boxSize - 1, this.boxSize - 1);
+		this.cvs.fill();
+		this.cvs.stroke();
+		this.cvs.closePath()
+	};
+	drawPic.prototype.strToint = function(x) {
+		if (x === 'a') return 10;
+		else if (x === 'b') return 11;
+		else if (x === 'c') return 12;
+		else if (x === 'd') return 13;
+		else if (x === 'e') return 14;
+		else if (x === 'f') return 15;
+		else return eval(x)
+	};
+</script>
+
+<!--电脑端函数：点击 长按-->
+<script type='text/javascript'>
+	let listIndex = 0;
+	// main
+	maincanvas.onmousedown = function (ev) {
+		let clickedX = ev.offsetX;
+		let clickedY = ev.offsetY;
+		var indexY = parseInt(clickedX / 8);
+		var indexX = parseInt(clickedY / 8);
+		if (indexX % 2 === 0 && indexY % 2 === 0) {
+			listIndex = 10 * indexY / 2 + indexX / 2;
+			if (LikeBtn === 0){
+				sendLEDmess(listIndex, 0);
+			}else if(LikeBtn === 1){
+				mess = EMOJISLIST[listIndex]
+				likeEMOJIS(mess)
+				alert("♥收藏成功 加入离线切换列表♥")
+			}
+		}
+	}
+	diycanvas.onmousedown = function (ev){
+		let clickedY = ev.offsetX;
+		let clickedX = ev.offsetY;
+		var indexY = parseInt(clickedX / 8);
+		var indexX = parseInt(clickedY / 8);
+		if (indexX % 2 === 0 && indexY % 2 === 0) {
+			listIndex = 10 * indexY / 2 + indexX / 2;
+			if (listIndex < DIYEMOJISLIST.length){
+
+				if (LikeBtn=== 0){
+					if (DeleteBtn === 0){
+						sendLEDmess(listIndex, 1);
+					}
+				}else if (LikeBtn === 1){
+					mess = DIYEMOJISLIST[listIndex]
+					likeEMOJIS(mess)
+					alert("♥收藏成功 加入离线切换列表♥")
+				}
+				if (DeleteBtn === 1) {
+					var r = confirm("确定删除该表情？不可复原");
+					if (r === true) {
+						DIYdeletebtn();
+					}
+				}
+			}
+		}
+	}
+	likedcanvas.onmousedown = function (ev){
+		let clickedY = ev.offsetX;
+		let clickedX = ev.offsetY;
+		var indexY = parseInt(clickedX / 8);
+		var indexX = parseInt(clickedY / 8);
+		if (indexX % 2 === 0 && indexY % 2 === 0) {
+			listIndex = 10 * indexY / 2 + indexX / 2;
+			if (listIndex < LIKEDEMOJISLIST.length){
+
+				if (DeleteBtn === 0){
+					sendLEDmess(listIndex, 2);
+				}else if(DeleteBtn === 1){
+					var r=confirm("确定将表情移出收藏列表？");
+					if (r===true){
+						mess = LIKEDEMOJISLIST[listIndex];
+						var xhttp = new XMLHttpRequest();
+						xhttp.onreadystatechange = function() {
+							if (this.readyState === 4 && this.status === 200) {
+								getData();
+							}
+						};
+						xhttp.open('GET', 'deleteLiked?EMOJImess=' + mess, true);
+						xhttp.send();
+					}
+				}
+			}
+		}
+	}
+
+
+	function sendLEDmess(index, type) {
+		let mess;
+		if (type === 0){
+			mess = EMOJISLIST[index];
+		}else if (type === 1){
+			mess = DIYEMOJISLIST[index];
+		}else if (type === 2){
+			mess = LIKEDEMOJISLIST[index];
+		}
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState === 4 && this.status === 200) {}
+		};
+		xhttp.open('GET', 'changeLED?LEDmess=' + mess, true);
+		xhttp.send();
+	}
+
+	function likeEMOJIS(mess){
+		let flag = LIKEDEMOJISLIST.indexOf(mess);
+		if (flag === -1 ){
+			var xhttp = new XMLHttpRequest();
+			xhttp.onreadystatechange = function() {
+				if (this.readyState === 4 && this.status === 200) {
+					getData();
+				}
+			};
+			xhttp.open('GET', 'likedEMOJI?EMOJImess=' + mess, true);
+			xhttp.send();
+		}
+	}
+
+	function DIYdeletebtn(){
+		mess = DIYEMOJISLIST[listIndex];
+		var xhttp = new XMLHttpRequest();
+		xhttp.onreadystatechange = function() {
+			if (this.readyState === 4 && this.status === 200) {
+				getData();
+			}
+		};
+		xhttp.open('GET', 'deleteEMOJI?EMOJImess=' + mess, true);
+		xhttp.send();
+	}
+</script>
+
+
+<script type="text/javascript">
+	var lastTouchEnd = 0;
+	document.documentElement.addEventListener('touchend', function (event) {
+		var now = Date.now();
+		if (now - lastTouchEnd <= 300) {
+			event.preventDefault();
+		}
+		lastTouchEnd = now;
+	}, {
+		passive: false
+	});
+</script>
