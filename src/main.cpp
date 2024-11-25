@@ -71,7 +71,6 @@ void setup() {
 	pixels.begin();
 	pixels.fill(pixels.Color(0, 0, 0));
 	pixels.show();
-	pinMode(Touch, INPUT);
 
 	// 显示开机WIFI的logo
 	ShowLOGO(WIFIlogo);
@@ -137,7 +136,6 @@ unsigned long last_10sec = 0;
 unsigned int counter = 0;
 unsigned int IPlength = 0;
 void loop() {
-	OnTouchClicked();
 	unsigned long t = millis();
 	webSocket.loop();
 	server.handleClient();
@@ -342,32 +340,6 @@ void DeleteEmoji(String name, String mess){
 	File fileSaved = LittleFS.open("/EmojiData.json", "w");
 	serializeJson(doc, fileSaved);
 	fileSaved.close();
-}
-
-// 按键切换显示 收藏的表情
-void OnTouchClicked(){
-	int flag = digitalRead(Touch);
-	if(flag == 1){
-		delay(200); // de-bounce delay.
-		if(flag == 1){
-			if(BtnState == 0){
-				File file = LittleFS.open("/EmojiData.json", "r");
-				String a = file.readString();
-				file.close();
-				DynamicJsonDocument doc(10240);
-				deserializeJson(doc, a);
-				JsonObject obj = doc.as<JsonObject>();
-				int length = doc["likedEmojis"].size();
-				if (length != 0){
-					if (LikedIndex >= length){LikedIndex = 0;}
-					String Likedmess = doc["likedEmojis"][LikedIndex];
-					ShowLOGO(Likedmess);
-					LikedIndex ++;
-				}
-			}
-			BtnState = 1;
-		}
-	}else{BtnState = 0;}
 }
 
 // 发送wifi名称

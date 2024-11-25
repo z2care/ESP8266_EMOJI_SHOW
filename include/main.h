@@ -3,7 +3,6 @@
 #define WIDTH 8
 #define HEIGHT 8
 #define ZIGZAG_MATRIX
-#define Touch 2
  
 #include <ESP8266mDNS.h>
 #include <ESP8266WebServer.h>
@@ -71,7 +70,6 @@ void GetBrightness();
 void ShowLOGO(String LOGOmess);
 void DeleteEmoji(String name, String mess);
 void SaveFile(String name, String mess);
-void OnTouchClicked();
 void SendWiFimess();
 void DeleteWiFi();
 void RotateBtn();
