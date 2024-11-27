@@ -12,6 +12,8 @@
     #include "artnet.h"
 #endif
 #include "ws2811dma.h"
+#include "hello.h"
+#include "AdafruitNeopixel.h"
 
 /**
  * Caso a placa fique piscando loucamente após gravar e não volte a funcionar nem por ação de reza brava. Use o seguinte comando
@@ -164,6 +166,10 @@ void task_blink(void* ignore)
 *******************************************************************************/
 void user_init(void)
 {
+
+    sayhello();
+    WS2812B_Test();
+
     uart_init_new();
 	UART_SetBaudrate(UART0, 115200);
 	UART_SetBaudrate(UART1, 115200);
