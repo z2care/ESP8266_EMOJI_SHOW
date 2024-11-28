@@ -1,0 +1,1 @@
+{"type": "library", "name": "lis3dh-esp-idf", "version": "0.0.0+20241127143021.sha.cb9ffb0", "spec": {"owner": null, "id": null, "name": "lis3dh-esp-idf", "requirements": null, "uri": "git+https://github.com/gschorcht/lis3dh-esp-idf"}}

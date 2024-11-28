@@ -12,8 +12,9 @@
     #include "artnet.h"
 #endif
 #include "ws2811dma.h"
-#include "hello.h"
+#include "hellos.h"
 #include "AdafruitNeopixel.h"
+#include "hellocpp.h"
 
 /**
  * Caso a placa fique piscando loucamente após gravar e não volte a funcionar nem por ação de reza brava. Use o seguinte comando
@@ -168,6 +169,7 @@ void user_init(void)
 {
 
     sayhello();
+    hello_world();
     WS2812B_Test();
 
     uart_init_new();
