@@ -22,6 +22,30 @@
 #define I2C_SDA_PIN 4    // SDA 引脚，GPIO4
 #define I2C_SCL_PIN 5    // SCL 引脚，GPIO5
 
+#define LIS3DH_ADDR  0x33  // LIS3DH I2C 地址，通常为 0x32 或 0x33（根据地址引脚配置）
+
+// LIS3DH 寄存器定义
+#define WHO_AM_I_REG  0x0F  // WHO_AM_I 寄存器地址
+#define CTRL_REG1     0x20  // 控制寄存器 1，用于配置传感器的工作模式
+#define CTRL_REG3     0x22  // 控制寄存器 3，用于配置中断
+#define INT1_CFG       0x30  // 中断 1 配置寄存器
+#define INT2_CFG       0x34  // 中断 2 配置寄存器
+#define INT1_SRC       0x31  // 中断 1 状态寄存器
+#define INT2_SRC       0x35  // 中断 2 状态寄存器
+#define OUT_X_L        0x28  // X 轴数据低位
+#define OUT_X_H        0x29  // X 轴数据高位
+#define OUT_Y_L        0x2A  // Y 轴数据低位
+#define OUT_Y_H        0x2B  // Y 轴数据高位
+#define OUT_Z_L        0x2C  // Z 轴数据低位
+#define OUT_Z_H        0x2D  // Z 轴数据高位
+
+// 中断引脚
+#define INT1_PIN  16    // INT1 引脚（连接到 ESP8266 的某个 GPIO 引脚）
+#define INT2_PIN  17    // INT2 引脚（连接到 ESP8266 的某个 GPIO 引脚）
+
+volatile bool int1Triggered = false;  // 标记 INT1 中断
+volatile bool int2Triggered = false;  // 标记 INT2 中断
+
 #define NUM0 "0077770007777770077007700770077007700770077007700777777000777700"
 #define NUM1 "0007700000777000007770000007700000077000000770000077770000777700"
 #define NUM2 "0077770007777770077007700000077000077700007770000777777007777770"

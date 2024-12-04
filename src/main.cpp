@@ -66,12 +66,113 @@ void InitLittleFS(){
 	}
 }
 
+// 中断服务程序
+void ICACHE_RAM_ATTR ISR_INT1() {
+  int1Triggered = true;  // 设置 INT1 中断触发标志
+}
+
+void ICACHE_RAM_ATTR ISR_INT2() {
+  int2Triggered = true;  // 设置 INT2 中断触发标志
+}
+
+void configureInterrupts() {
+  // 配置中断1（例如，阈值超限）
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(INT1_CFG);
+  Wire.write(0x50);  // 配置中断 1，按需设置
+  Wire.endTransmission();
+  
+  // 配置中断2（例如，方向变化）
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(INT2_CFG);
+  Wire.write(0x50);  // 配置中断 2，按需设置
+  Wire.endTransmission();
+}
+
+bool initializeLIS3DH() {
+  uint8_t whoAmI;
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(WHO_AM_I_REG);
+  Wire.endTransmission();
+  
+  Wire.requestFrom(LIS3DH_ADDR, 1);
+  if (Wire.available()) {
+    whoAmI = Wire.read();
+    if (whoAmI == 0x33) {
+      // 配置 LIS3DH 的工作模式
+      Wire.beginTransmission(LIS3DH_ADDR);
+      Wire.write(CTRL_REG1);
+      Wire.write(0x57);  // 设置为正常模式，100Hz 输出数据速率
+      Wire.endTransmission();
+      
+      // 配置中断
+      configureInterrupts();
+      
+      return true;
+    }
+  }
+  return false;
+}
+
+void readSensorData() {
+  int16_t x, y, z;
+  
+  // 读取 X 轴数据
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(OUT_X_L);
+  Wire.endTransmission();
+  Wire.requestFrom(LIS3DH_ADDR, 2);
+  if (Wire.available() == 2) {
+    x = Wire.read() | (Wire.read() << 8);  // 读取 X 轴数据
+  }
+  
+  // 读取 Y 轴数据
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(OUT_Y_L);
+  Wire.endTransmission();
+  Wire.requestFrom(LIS3DH_ADDR, 2);
+  if (Wire.available() == 2) {
+    y = Wire.read() | (Wire.read() << 8);  // 读取 Y 轴数据
+  }
+  
+  // 读取 Z 轴数据
+  Wire.beginTransmission(LIS3DH_ADDR);
+  Wire.write(OUT_Z_L);
+  Wire.endTransmission();
+  Wire.requestFrom(LIS3DH_ADDR, 2);
+  if (Wire.available() == 2) {
+    z = Wire.read() | (Wire.read() << 8);  // 读取 Z 轴数据
+  }
+  
+  // 打印加速度数据
+  Serial.print("X: ");
+  Serial.print(x);
+  Serial.print(" Y: ");
+  Serial.print(y);
+  Serial.print(" Z: ");
+  Serial.println(z);
+}
+
 void setup() {
 	Serial.begin(115200);
 
 	// 初始化 I2C，总线频率设置为 100 kHz
 	Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);  // 使用指定的 SDA 和 SCL 引脚初始化 I2C
 	Wire.setClock(100000);  // 设置 I2C 时钟频率为 100 kHz
+
+	pinMode(4, INPUT_PULLUP);
+  	pinMode(5, INPUT_PULLUP);
+
+	// 配置中断
+	attachInterrupt(digitalPinToInterrupt(INT1_PIN), ISR_INT1, FALLING);  // INT1 引脚中断，下降沿触发
+	attachInterrupt(digitalPinToInterrupt(INT2_PIN), ISR_INT2, FALLING);  // INT2 引脚中断，下降沿触发
+
+	// 初始化 LIS3DH 传感器
+	if (initializeLIS3DH()) {
+		Serial.println("LIS3DH Initialized successfully");
+	} else {
+		Serial.println("LIS3DH Initialization failed");
+	}
 
 	pixels.begin();
 	pixels.fill(pixels.Color(0, 0, 0));
@@ -144,6 +245,17 @@ unsigned int IPlength = 0;
 unsigned int I2C_ADDR = 0x19;
 void loop() {
 	platform_i2c_read(&I2C_ADDR, 0x10, data, sizeof(data));
+	if (int1Triggered) {
+		Serial.println("Interrupt 1 triggered");
+		readSensorData();  // 读取传感器数据
+		int1Triggered = false;  // 清除中断标志
+	}
+
+	if (int2Triggered) {
+		Serial.println("Interrupt 2 triggered");
+		readSensorData();  // 读取传感器数据
+		int2Triggered = false;  // 清除中断标志
+	}
 	unsigned long t = millis();
 	webSocket.loop();
 	server.handleClient();
