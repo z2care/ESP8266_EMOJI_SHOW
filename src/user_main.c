@@ -12,7 +12,6 @@
     #include "artnet.h"
 #endif
 #include "ws2811dma.h"
-#include "hellos.h"
 #include "AdafruitNeopixel.h"
 #include "i2c_master.h"
 #include "lis3dh_reg.h"
@@ -180,7 +179,10 @@ int ICACHE_FLASH_ATTR platform_i2c_write(void *handle, uint8_t reg, const uint8_
     memcpy(&data[1], bufp, len);  // 将数据从 bufp 复制到 data 中
 
     i2c_master_start();  // 启动 I2C 通信
-    int result = i2c_master_write((uint8_t *)handle, data, len + 1);  // 写入数据
+    int result = 0;
+    for(int i = 0; i < len +1; i++)
+        i2c_master_writeByte((uint8)(data[i]));  // 写入数据
+
     i2c_master_stop();  // 停止 I2C 通信
 
     os_free(data);  // 释放内存
@@ -190,20 +192,19 @@ int ICACHE_FLASH_ATTR platform_i2c_write(void *handle, uint8_t reg, const uint8_
 
 // I2C 读函数
 int ICACHE_FLASH_ATTR platform_i2c_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len) {
-    int result;
+    int result = 0;
     i2c_master_start();  // 启动 I2C 通信
 
     // 发送寄存器地址
-    result = i2c_master_write((uint8_t *)handle, &reg, 1);
-    if (result != 0) {
-        i2c_master_stop();  // 停止 I2C 通信
-        return result;      // 如果写寄存器地址失败，返回错误
-    }
+    i2c_master_writeByte(reg);
 
-    i2c_master_restart();  // 重新启动 I2C
+    i2c_master_stop();      // 停止通信
+    i2c_master_start();     // 重新启动通信
+    //i2c_master_restart();  // 重新启动 I2C
 
     // 从设备读取数据
-    result = i2c_master_read((uint8_t *)handle, bufp, len);
+    for(int i = 0; i < len; i++)
+        *(bufp++) = i2c_master_readByte();
     i2c_master_stop();  // 停止 I2C 通信
 
     return result;  // 返回读操作的结果，0 表示成功，非零表示失败
@@ -236,7 +237,6 @@ void user_init(void)
     int read_result = platform_i2c_read(handle, 0x01, data_read, sizeof(data_read));
     os_printf("I2C read result: %d, Data: 0x%02x\n", read_result, data_read[0]);
 
-    sayhello();
     WS2812B_Test();
 
     uart_init_new();
