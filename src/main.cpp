@@ -12,7 +12,7 @@ ESP8266WebServer server(80);
 WebSocketsServer webSocket = WebSocketsServer(81);
 // 如果点阵出现乱码 请调整传输速率: NEO_KHZ400
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(WIDTH * HEIGHT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
-
+uint8_t data[3];
 
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
   switch (type) {
@@ -68,6 +68,11 @@ void InitLittleFS(){
 
 void setup() {
 	Serial.begin(115200);
+
+	// 初始化 I2C，总线频率设置为 100 kHz
+	Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);  // 使用指定的 SDA 和 SCL 引脚初始化 I2C
+	Wire.setClock(100000);  // 设置 I2C 时钟频率为 100 kHz
+
 	pixels.begin();
 	pixels.fill(pixels.Color(0, 0, 0));
 	pixels.show();
@@ -135,8 +140,10 @@ void setup() {
 unsigned long last_10sec = 0;
 unsigned int counter = 0;
 unsigned int IPlength = 0;
+
+unsigned int I2C_ADDR = 0x19;
 void loop() {
-	platform_i2c_read((void*)I2C_NUM_0, 0x10, data, sizeof(data));
+	platform_i2c_read(&I2C_ADDR, 0x10, data, sizeof(data));
 	unsigned long t = millis();
 	webSocket.loop();
 	server.handleClient();
@@ -370,141 +377,41 @@ void RotateBtn(){
 	server.send(200, "text/plain", "OK");
 }
 
-int platform_i2c_write(void *handle, uint8_t reg, const uint8_t *bufp, uint16_t len) {
-    // 假设 handle 是 i2c_port_t 类型
-    i2c_port_t i2c_num = (i2c_port_t)(uintptr_t)handle;  // 将 void* 转换为 i2c_port_t 类型
-    esp_err_t ret;
+// I2C 写函数
+int platform_i2c_write(void* handle, uint8_t reg, const uint8_t *bufp, uint16_t len) {
+  Wire.beginTransmission(*((uint8_t*)handle));  // 启动 I2C 传输，指定设备地址
+  Wire.write(reg);  // 写寄存器地址
 
-    // 创建一个 I2C 命令
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  for (uint16_t i = 0; i < len; i++) {
+    Wire.write(bufp[i]);  // 写入数据
+  }
 
-    // 向寄存器写入数据
-    // 将寄存器地址放到数据流中
-    ret = i2c_master_start(cmd);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_start failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 向目标设备发送 I2C 地址和写命令
-    ret = i2c_master_write_byte(cmd, (LIS3DH_I2C_ADD_H << 1) | I2C_MASTER_WRITE, true);  //LIS3DH_I2C_ADD_H为设备实际地址
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write_byte failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送寄存器地址
-    ret = i2c_master_write_byte(cmd, reg, true);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write_byte (reg) failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送数据
-    ret = i2c_master_write(cmd, bufp, len, true);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送停止信号
-    ret = i2c_master_stop(cmd);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_stop failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 执行命令
-    ret = i2c_master_cmd_begin(i2c_num, cmd, pdMS_TO_TICKS(1000));  // 设置超时为1000ms
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_cmd_begin failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 清理命令链接
-    i2c_cmd_link_delete(cmd);
-    return 0;  // 返回0表示成功
+  int result = Wire.endTransmission();  // 结束 I2C 传输，返回传输结果
+  if (result == 0) {
+    return 0;  // 成功
+  } else {
+    return -1;  // 失败
+  }
 }
 
+// I2C 读函数
 int platform_i2c_read(void *handle, uint8_t reg, uint8_t *bufp, uint16_t len) {
-    // 假设 handle 是 i2c_port_t 类型
-    i2c_port_t i2c_num = (i2c_port_t)(uintptr_t)handle;  // 将 void* 转换为 i2c_port_t 类型
-    esp_err_t ret;
+  Wire.beginTransmission(*((uint8_t*)handle));  // 启动 I2C 传输，指定设备地址
+  Wire.write(reg);  // 写寄存器地址
 
-    // 创建一个 I2C 命令
-    i2c_cmd_handle_t cmd = i2c_cmd_link_create();
+  int result = Wire.endTransmission(false);  // 结束传输，但不释放总线，准备读取数据
+  if (result != 0) {
+    return -1;  // 传输失败
+  }
 
-    // 向寄存器发送读取请求
-    ret = i2c_master_start(cmd);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_start failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
+  Wire.requestFrom(reg, len);  // 从设备请求数据
+  uint16_t i = 0;
+  while (Wire.available()) {
+    bufp[i++] = Wire.read();  // 读取数据到缓冲区
+    if (i >= len) {
+      break;  // 数据读取完毕
     }
+  }
 
-    // 向目标设备发送 I2C 地址和写命令
-    ret = i2c_master_write_byte(cmd, (LIS3DH_I2C_ADD_H << 1) | I2C_MASTER_WRITE, true);  // LIS3DH_I2C_ADD_H为设备实际地址
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write_byte failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送寄存器地址（准备读取数据）
-    ret = i2c_master_write_byte(cmd, reg, true);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write_byte (reg) failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 启动重复开始条件，开始读操作
-    ret = i2c_master_start(cmd);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_start (read) failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送 I2C 地址并选择读操作
-    ret = i2c_master_write_byte(cmd, (LIS3DH_I2C_ADD_H << 1) | I2C_MASTER_READ, true);  // LIS3DH_I2C_ADD_H为设备实际地址
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_write_byte (read) failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 读取数据
-    ret = i2c_master_read(cmd, bufp, len, I2C_MASTER_LAST_NACK);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_read failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 发送停止信号
-    ret = i2c_master_stop(cmd);
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_stop failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 执行命令
-    ret = i2c_master_cmd_begin(i2c_num, cmd, pdMS_TO_TICKS(1000));  // 设置超时为1000ms
-    if (ret != ESP_OK) {
-        ESP_LOGE("I2C", "i2c_master_cmd_begin failed: %s", esp_err_to_name(ret));
-        i2c_cmd_link_delete(cmd);
-        return -1;
-    }
-
-    // 清理命令链接
-    i2c_cmd_link_delete(cmd);
-    return 0;  // 返回0表示成功
+  return i == len ? 0 : -1;  // 如果读取的数据长度符合要求，返回 0
 }
